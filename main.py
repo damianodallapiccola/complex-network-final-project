@@ -40,7 +40,7 @@ def infection_time(event_list, p, seed_node):
 
 
 def main():
-    event_data = np.genfromtxt('events_US_air_traffic_GMT.txt', names=True, dtype=int)
+    event_data = np.genfromtxt('data/events_US_air_traffic_GMT.txt', names=True, dtype=int)
     event_data.sort(order=['StartTime'])
 
     ##########
@@ -61,7 +61,7 @@ def main():
 
 
 
-    # network = nx.read_weighted_edgelist('aggregated_US_air_traffic_network_undir.edg')
+    # network = nx.read_weighted_edgelist('data/aggregated_US_air_traffic_network_undir.edg')
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ __author__ = 'Rainer.Kujala@aalto.fi'
 class SI_AnimHelper(object):
 
     def __init__(self, infection_times):
-        event_fname = "events_US_air_traffic_GMT.txt"
+        event_fname = "data/events_US_air_traffic_GMT.txt"
         if not os.path.exists(event_fname):
             raise IOError("File " + event_fname + "could not be found")
 
@@ -22,7 +22,7 @@ class SI_AnimHelper(object):
         )
 
         self.infection_times = infection_times
-        airport_info_csv_fname = 'US_airport_id_info.csv'
+        airport_info_csv_fname = 'data/US_airport_id_info.csv'
 
         if not os.path.exists(airport_info_csv_fname):
             raise IOError("File " + event_fname + "could not be found")
@@ -39,7 +39,7 @@ class SI_AnimHelper(object):
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_axes([0, 0, 1, 1])
         # ([0, 0, 1, 1])
-        bg_figname = 'US_air_bg.png'
+        bg_figname = 'data/US_air_bg.png'
         img = plt.imread(bg_figname)
         self.axis_extent = (-6674391.856090588, 4922626.076444283,
                             -2028869.260519173, 4658558.416671531)
@@ -183,7 +183,7 @@ def plot_network_usa(net, xycoords, edges=None, linewidths=None):
     fig = plt.figure()
     ax = fig.add_axes([0, 0, 1, 0.9])
     # ([0, 0, 1, 1])
-    bg_figname = 'US_air_bg.png'
+    bg_figname = 'data/US_air_bg.png'
     img = plt.imread(bg_figname)
     axis_extent = (-6674391.856090588, 4922626.076444283,
                    -2028869.260519173, 4658558.416671531)
