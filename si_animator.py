@@ -31,7 +31,8 @@ class SI_AnimHelper(object):
             airport_info_csv_fname,
             delimiter=',',
             dtype=None,
-            names=True
+            names=True,
+            encoding=None
         )
         self.xcoords = id_data['xcoordviz']
         self.ycoords = id_data['ycoordviz']
