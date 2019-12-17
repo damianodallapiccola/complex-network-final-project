@@ -1,67 +1,46 @@
 import networkx as nx
 import matplotlib as mpl
 import numpy as np
-import scipy
-from random import random
-from si_animator import visualize_si
-
-def infection_time(event_list, p, seed_node):
-    """
-    inputs:
-    - network
-    - event list
-        format: Source, Destination, StartTime, EndTime, Duration
-    - probability p
-    - the seed node id
-
-    outputs:
-    - the number of infected nodes as function of time
-    - a dictionary of the infection times of with nodes as keys.
-    """
-
-    infection_times = {}
-    found_seed = False
-
-    for event in event_list:
-        if event["Source"] == seed_node and found_seed is False:
-            infection_times[event["Source"]] = event["StartTime"]
-            found_seed = True
-
-        if event["Source"] in infection_times and event["StartTime"] >= infection_times[event["Source"]] and random() <= p:
-            if event["Destination"] not in infection_times:
-                infection_times[event["Destination"]] = event["EndTime"]
-            else:
-                if infection_times[event["Destination"]] > event["EndTime"]:
-                    infection_times[event["Destination"]] = event["EndTime"]
-
-    infection_list = list(infection_times.values())
-    infection_list.sort()
-    return infection_times, infection_list
+from utils import infection_time, create_bins, plot_avg_prevalence
 
 
 def main():
     event_data = np.genfromtxt('data/events_US_air_traffic_GMT.txt', names=True, dtype=int)
     event_data.sort(order=['StartTime'])
+    network = nx.read_weighted_edgelist('data/aggregated_US_air_traffic_network_undir.edg')
+    n_nodes = network.number_of_nodes()
 
     ##########
     # task 1 #
     ##########
 
-    infection_times, infection_list = infection_time(event_data, 1, 0)
-    print("Node 41 infection time: " + str(infection_times[41]))
+    # infection_times, infection_list = infection_time(event_data, 1, 0)
+    # print("Node 41 infection time: " + str(infection_times[41]))
 
     # animation of the infection
-    visualize_si(np.array(infection_list), save_fname="si_viz_example.mp4")
+    # visualize_si(np.array(infection_list), save_fname="si_viz_example.mp4")
 
     ##########
     # task 2 #
     ##########
 
+    infection_prob = [0.01, 0.05, 0.1, 0.5, 1.0]
+    infection_times_list = []
+    for prob in infection_prob:
+        _, infection_list = infection_time(event_data, prob, 0)
+        infection_times_list.append(infection_list)
+
+
+    min_timestemp = min(event_data, key=lambda item:item["StartTime"])[2]
+    max_timestemp = max(event_data, key=lambda item:item["EndTime"])[3]
+    n_bins = 50
+    bins = create_bins(min_timestemp, max_timestemp, n_bins)
+
+    plot_avg_prevalence(infection_times_list, infection_prob, n_nodes, bins)
 
 
 
 
-    # network = nx.read_weighted_edgelist('data/aggregated_US_air_traffic_network_undir.edg')
 
 
 if __name__ == '__main__':
