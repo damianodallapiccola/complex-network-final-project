@@ -1,9 +1,10 @@
 import numpy as np
 from random import random, seed
 import matplotlib.pyplot as plt
-from scipy.stats import binned_statistic
+from scipy.stats import binned_statistic, spearmanr
 import datetime as dt
 from statistics import mean
+import scipy.stats
 
 def infection_time(event_list, p, seed_node):
     """
@@ -28,16 +29,17 @@ def infection_time(event_list, p, seed_node):
 
     for event in event_list:
         if event["Source"] == seed_node and found_seed is False:
-            infection_times[event["Source"]] = event["StartTime"]
+            infection_times[str(event["Source"])] = event["StartTime"]
             found_seed = True
 
-        if event["Source"] in infection_times and event["StartTime"] >= infection_times[
-            event["Source"]] and random() <= p:
-            if event["Destination"] not in infection_times:
-                infection_times[event["Destination"]] = event["EndTime"]
+        if str(event["Source"]) in infection_times and \
+                event["StartTime"] >= infection_times[str(event["Source"])] and \
+                random() <= p:
+            if str(event["Destination"]) not in infection_times:
+                infection_times[str(event["Destination"])] = event["EndTime"]
             else:
-                if infection_times[event["Destination"]] > event["EndTime"]:
-                    infection_times[event["Destination"]] = event["EndTime"]
+                if infection_times[str(event["Destination"])] > event["EndTime"]:
+                    infection_times[str(event["Destination"])] = event["EndTime"]
 
     infection_list = list(infection_times.values())
     infection_list.sort()
@@ -160,3 +162,69 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
     fig.savefig("./plots/averaged_prevalence_nodes.pdf")
+
+
+def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net, betweenness_centrality_net, n_nodes):
+
+    # ordered list of values, the index represent the node
+    infection_times_median_list = []
+    clustering_coefficient_net_list = []
+    degree_net_list = []
+    strength_net_list = []
+    betweenness_centrality_net_list = []
+
+    for i in range(n_nodes):
+        infection_times_median_list.append(infection_times_median[str(i)])
+        clustering_coefficient_net_list.append(clustering_coefficient_net[str(i)])
+        degree_net_list.append(degree_net[str(i)])
+        strength_net_list.append(strength_net[str(i)])
+        betweenness_centrality_net_list.append(betweenness_centrality_net[str(i)])
+
+
+    # dateconv = np.vectorize(dt.datetime.fromtimestamp)
+    # date = dateconv(infection_times_median_list)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(clustering_coefficient_net_list, infection_times_median_list, alpha=0.5)
+    # plt.ylim(dateconv(dateconv([min(infection_times_median_list)-(min(infection_times_median_list)%(3600*24))])), max(date))
+    plt.suptitle(r'Median infection times as a function of the unweighted clustering coefficient')
+    ax.set_xlabel(r'clustering coefficient $c$')
+    ax.set_ylabel(r'median infection time')
+    fig.set_figwidth(6.7)
+    fig.savefig("./plots/t4_clustering_coefficient.pdf")
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(degree_net_list, infection_times_median_list, alpha=0.5)
+    plt.suptitle(r'Median infection times as a function of the degree')
+    ax.set_xlabel(r'degree $k$')
+    ax.set_ylabel(r'median infection time')
+    fig.set_figwidth(6.7)
+    fig.savefig("./plots/t4_degree_net.pdf")
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(strength_net_list, infection_times_median_list, alpha=0.5)
+    plt.suptitle(r'Median infection times as a function of the strength')
+    ax.set_xlabel(r'strength $s$')
+    ax.set_ylabel(r'median infection time')
+    fig.set_figwidth(6.7)
+    fig.savefig("./plots/t4_strength_net.pdf")
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(betweenness_centrality_net_list, infection_times_median_list, alpha=0.5)
+    plt.suptitle(r'Median infection times as a function of the unweighted betweenness centrality')
+    ax.set_xlabel(r'betweenness centrality')
+    ax.set_ylabel(r'median infection time')
+    fig.set_figwidth(6.7)
+    fig.savefig("./plots/t4_betweenness_centrality_net.pdf")
+
+    # Spearman rank-correlation coefficient
+    print("Spearman rank-correlation coefficient between median infection time and: ")
+    print("- clustering coefficient: " + str(spearmanr(infection_times_median_list, clustering_coefficient_net_list).correlation))
+    print("- degree: " + str(spearmanr(infection_times_median_list, degree_net_list).correlation))
+    print("- strength: " + str(spearmanr(infection_times_median_list, strength_net_list).correlation))
+    print("- betweenness centrality: " + str(spearmanr(infection_times_median_list, betweenness_centrality_net_list).correlation))
+

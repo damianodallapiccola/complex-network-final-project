@@ -1,8 +1,11 @@
 import networkx as nx
+import pandas as pd
+import random
+import scipy.stats
 from datetime import datetime
 import numpy as np
-from utils import infection_time, create_bins, plot_avg_prevalence_probs, plot_avg_prevalence_nodes
-
+from utils import infection_time, create_bins, plot_avg_prevalence_probs, plot_avg_prevalence_nodes, plot_and_spearman_task4
+from si_animator import visualize_si
 
 def main():
     event_data = np.genfromtxt('data/events_US_air_traffic_GMT.txt', names=True, dtype=int)
@@ -21,10 +24,10 @@ def main():
     ######################################
 
     # infection_times, infection_list = infection_time(event_data, 1, 0)
-    # print("Node 41 infection time: " + str(infection_times[41]) +" "+ str(datetime.fromtimestamp(infection_times[41])))
+    # print("Node 41 infection time: "+str(infection_times['41'])+" "+str(datetime.fromtimestamp(infection_times['41'])))
 
     # # animation of the infection
-    # visualize_si(np.array(infection_list), save_fname="si_viz_example.mp4")
+    # visualize_si(np.array(infection_list), save_fname="./simulations/infection_simulation_prob1_seed0.mp4")
 
     ######################################
     #               task 2               #
@@ -65,6 +68,23 @@ def main():
     ######################################
     #               task 4               #
     ######################################
+
+    # infection_times_list = []
+    # for i in range(50):
+    #     infection_prob = 0.5
+    #     seed_node = random.randint(0, n_nodes)
+    #     infection_times, _ = infection_time(event_data, infection_prob, seed_node)
+    #     infection_times_list.append(infection_times)
+    #
+    # infection_times_df = pd.DataFrame(infection_times_list)
+    # infection_times_median = dict(infection_times_df.median())
+    # clustering_coefficient_net = nx.clustering(network)
+    # degree_net = nx.degree(network)
+    # strength_net = nx.degree(network, weight="weight")
+    # betweenness_centrality_net = nx.betweenness_centrality(network)
+    #
+    # plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net, betweenness_centrality_net, n_nodes)
+
 
 
 
