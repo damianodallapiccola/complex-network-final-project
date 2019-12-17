@@ -1,5 +1,5 @@
 import networkx as nx
-import matplotlib as mpl
+from datetime import datetime
 import numpy as np
 from utils import infection_time, create_bins, plot_avg_prevalence
 
@@ -14,8 +14,8 @@ def main():
     # task 1 #
     ##########
 
-    # infection_times, infection_list = infection_time(event_data, 1, 0)
-    # print("Node 41 infection time: " + str(infection_times[41]))
+    infection_times, infection_list = infection_time(event_data, 1, 0)
+    print("Node 41 infection time: " + str(infection_times[41]) +" "+ str(datetime.fromtimestamp(infection_times[41])))
 
     # animation of the infection
     # visualize_si(np.array(infection_list), save_fname="si_viz_example.mp4")
@@ -25,10 +25,14 @@ def main():
     ##########
 
     infection_prob = [0.01, 0.05, 0.1, 0.5, 1.0]
-    infection_times_list = []
+    infection_times_list_avg = []
+    infection_times_list_probs = []
     for prob in infection_prob:
-        _, infection_list = infection_time(event_data, prob, 0)
-        infection_times_list.append(infection_list)
+        for i in range(10):
+            _, infection_list = infection_time(event_data, prob, 0)
+            infection_times_list_avg.append(infection_list)
+        infection_times_list_probs.append(infection_times_list_avg)
+        infection_times_list_avg = []
 
 
     min_timestemp = min(event_data, key=lambda item:item["StartTime"])[2]
@@ -36,7 +40,7 @@ def main():
     n_bins = 50
     bins = create_bins(min_timestemp, max_timestemp, n_bins)
 
-    plot_avg_prevalence(infection_times_list, infection_prob, n_nodes, bins)
+    plot_avg_prevalence(infection_times_list_probs, infection_prob, n_nodes, bins)
 
 
 

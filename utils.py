@@ -3,7 +3,7 @@ from random import random, seed
 import matplotlib.pyplot as plt
 from scipy.stats import binned_statistic
 import datetime as dt
-
+from statistics import mean
 
 def infection_time(event_list, p, seed_node):
     """
@@ -21,7 +21,7 @@ def infection_time(event_list, p, seed_node):
 
     """
 
-    seed(12)
+    # seed(12)
 
     infection_times = {}
     found_seed = False
@@ -76,29 +76,35 @@ def plot_avg_prevalence(infection_times_list, infection_prob, n_nodes, bins):
     -------
 
     """
-    # TODO:  average over these values over the 10 iterations
     fig = plt.figure()
     ax = fig.add_subplot(111)
     bin_centers = (bins[:-1] + bins[1:]) / 2
     dateconv = np.vectorize(dt.datetime.fromtimestamp)
     date = dateconv(bin_centers)
+    prevalences = []
     for list, prob in zip(infection_times_list, infection_prob):
-        counts, _, _ = binned_statistic(
-            x=list,
-            values=list,
-            bins=bins,
-            statistic='count')
+        for l in list:
+            counts, _, _ = binned_statistic(
+                x=l,
+                values=l,
+                bins=bins,
+                statistic='count')
 
-        cum_counts = np.cumsum(counts)
-        avg_prevalence = cum_counts / n_nodes
+            cum_counts = np.cumsum(counts)
+            prevalence = cum_counts / n_nodes
+            prevalences.append(prevalence)
+
+        avg_prevalence = np.array(prevalences)
+        avg_prevalence = avg_prevalence.mean(0)
+
         ax.plot(date, avg_prevalence, label=prob)
-
+        prevalences = []
         # ax.get_xaxis().get_major_formatter().set_useOffset(False)
         # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
     plt.suptitle(r'Averaged prevalence of the disease for each of the infection probabilities')
-    ax.set_xlabel(r'date')
+    ax.set_xlabel(r'time')
     ax.set_ylabel(r'averaged prevalence $\rho(t)$')
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
