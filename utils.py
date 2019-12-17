@@ -62,7 +62,7 @@ def create_bins(start, end, n_bins):
     return bins
 
 
-def plot_avg_prevalence(infection_times_list, infection_prob, n_nodes, bins):
+def plot_avg_prevalence_probs(infection_times_list, infection_prob, n_nodes, bins):
     """
 
     Parameters
@@ -103,9 +103,60 @@ def plot_avg_prevalence(infection_times_list, infection_prob, n_nodes, bins):
         # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
-    plt.suptitle(r'Averaged prevalence of the disease for each of the infection probabilities')
+    plt.suptitle(r'Averaged prevalence of the disease with different infection probabilities')
     ax.set_xlabel(r'time')
     ax.set_ylabel(r'averaged prevalence $\rho(t)$')
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
-    fig.savefig("./plots/averaged_prevalence.pdf")
+    fig.savefig("./plots/averaged_prevalence_probs.pdf")
+
+
+def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_nodes, bins):
+    """
+
+    Parameters
+    ----------
+    infection_times_list_nodes
+    seed_nodes_labels
+    n_nodes
+    bins
+
+    Returns
+    -------
+
+    """
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+    dateconv = np.vectorize(dt.datetime.fromtimestamp)
+    date = dateconv(bin_centers)
+    prevalences = []
+    for list, label in zip(infection_times_list_nodes, seed_nodes_labels):
+        for l in list:
+            counts, _, _ = binned_statistic(
+                x=l,
+                values=l,
+                bins=bins,
+                statistic='count')
+
+            cum_counts = np.cumsum(counts)
+            prevalence = cum_counts / n_nodes
+            prevalences.append(prevalence)
+
+        avg_prevalence = np.array(prevalences)
+        avg_prevalence = avg_prevalence.mean(0)
+
+        ax.plot(date, avg_prevalence, label=label)
+        prevalences = []
+        # ax.get_xaxis().get_major_formatter().set_useOffset(False)
+        # ax.get_xaxis().get_major_formatter().set_scientific(False)
+
+    ax.legend()
+    plt.suptitle(r'Averaged prevalence of the disease with different seed nodes')
+    ax.set_xlabel(r'time')
+    ax.set_ylabel(r'averaged prevalence $\rho(t)$')
+
+    fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
+    fig.savefig("./plots/averaged_prevalence_nodes.pdf")
