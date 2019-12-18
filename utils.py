@@ -6,11 +6,13 @@ import datetime as dt
 from statistics import mean
 import scipy.stats
 
-def infection_time(event_list, p, seed_node):
+
+def infection_time(event_list, p, seed_node, immunized_nodes=None):
     """
 
     Parameters
     ----------
+    immunized_nodes
     event_list
     p
     seed_node
@@ -24,6 +26,8 @@ def infection_time(event_list, p, seed_node):
 
     # seed(12)
 
+    if immunized_nodes is None:
+        immunized_nodes = []
     infection_times = {}
     found_seed = False
 
@@ -32,9 +36,8 @@ def infection_time(event_list, p, seed_node):
             infection_times[str(event["Source"])] = event["StartTime"]
             found_seed = True
 
-        if str(event["Source"]) in infection_times and \
-                event["StartTime"] >= infection_times[str(event["Source"])] and \
-                random() <= p:
+        if event["Destination"] not in immunized_nodes and str(event["Source"]) in infection_times and event[
+            "StartTime"] >= infection_times[str(event["Source"])] and random() <= p:
             if str(event["Destination"]) not in infection_times:
                 infection_times[str(event["Destination"])] = event["EndTime"]
             else:
@@ -128,7 +131,6 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
 
     """
 
-
     fig = plt.figure()
     ax = fig.add_subplot(111)
     bin_centers = (bins[:-1] + bins[1:]) / 2
@@ -156,7 +158,7 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
         # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
-    plt.suptitle(r'Averaged prevalence of the disease with different seed nodes')
+    plt.suptitle(r'Average prevalence of the disease with different seed nodes')
     ax.set_xlabel(r'time')
     ax.set_ylabel(r'averaged prevalence $\rho(t)$')
 
@@ -164,8 +166,8 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
     fig.savefig("./plots/averaged_prevalence_nodes.pdf")
 
 
-def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net, betweenness_centrality_net, n_nodes):
-
+def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net,
+                            betweenness_centrality_net, n_nodes):
     # ordered list of values, the index represent the node
     infection_times_median_list = []
     clustering_coefficient_net_list = []
@@ -179,7 +181,6 @@ def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, 
         degree_net_list.append(degree_net[str(i)])
         strength_net_list.append(strength_net[str(i)])
         betweenness_centrality_net_list.append(betweenness_centrality_net[str(i)])
-
 
     # dateconv = np.vectorize(dt.datetime.fromtimestamp)
     # date = dateconv(infection_times_median_list)
@@ -223,8 +224,59 @@ def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, 
 
     # Spearman rank-correlation coefficient
     print("Spearman rank-correlation coefficient between median infection time and: ")
-    print("- clustering coefficient: " + str(spearmanr(infection_times_median_list, clustering_coefficient_net_list).correlation))
+    print("- clustering coefficient: " + str(
+        spearmanr(infection_times_median_list, clustering_coefficient_net_list).correlation))
     print("- degree: " + str(spearmanr(infection_times_median_list, degree_net_list).correlation))
     print("- strength: " + str(spearmanr(infection_times_median_list, strength_net_list).correlation))
-    print("- betweenness centrality: " + str(spearmanr(infection_times_median_list, betweenness_centrality_net_list).correlation))
+    print("- betweenness centrality: " + str(
+        spearmanr(infection_times_median_list, betweenness_centrality_net_list).correlation))
 
+
+def plot_avg_prevalence_immunization(infection_times_list_immunization, immunization_strategy_labels, n_nodes, bins):
+    """
+
+    Parameters
+    ----------
+    infection_times_list_immunization
+    immunization_strategy_labels
+    n_nodes
+    bins
+
+    Returns
+    -------
+
+    """
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+    dateconv = np.vectorize(dt.datetime.fromtimestamp)
+    date = dateconv(bin_centers)
+    prevalences = []
+    for list, label in zip(infection_times_list_immunization, immunization_strategy_labels):
+        for l in list:
+            counts, _, _ = binned_statistic(
+                x=l,
+                values=l,
+                bins=bins,
+                statistic='count')
+
+            cum_counts = np.cumsum(counts)
+            prevalence = cum_counts / n_nodes
+            prevalences.append(prevalence)
+
+        avg_prevalence = np.array(prevalences)
+        avg_prevalence = avg_prevalence.mean(0)
+
+        ax.plot(date, avg_prevalence, label=label)
+        prevalences = []
+        # ax.get_xaxis().get_major_formatter().set_useOffset(False)
+        # ax.get_xaxis().get_major_formatter().set_scientific(False)
+
+    ax.legend()
+    plt.suptitle(r'Average prevalence of the disease with different immunization strategies')
+    ax.set_xlabel(r'time')
+    ax.set_ylabel(r'averaged prevalence $\rho(t)$')
+
+    fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
+    fig.savefig("./plots/t5_averaged_prevalence_immunization.pdf")

@@ -4,8 +4,9 @@ import random
 import scipy.stats
 from datetime import datetime
 import numpy as np
-from utils import infection_time, create_bins, plot_avg_prevalence_probs, plot_avg_prevalence_nodes, plot_and_spearman_task4
+from utils import infection_time, create_bins, plot_avg_prevalence_probs, plot_avg_prevalence_nodes, plot_and_spearman_task4, plot_avg_prevalence_immunization
 from si_animator import visualize_si
+from collections import Counter
 
 def main():
     event_data = np.genfromtxt('data/events_US_air_traffic_GMT.txt', names=True, dtype=int)
@@ -69,6 +70,13 @@ def main():
     #               task 4               #
     ######################################
 
+    # ----- task 4 and 5 ----- #
+    clustering_coefficient_net = nx.clustering(network)
+    degree_net = nx.degree(network)
+    strength_net = nx.degree(network, weight="weight")
+    betweenness_centrality_net = nx.betweenness_centrality(network)
+    # ------------------------ #
+
     # infection_times_list = []
     # for i in range(50):
     #     infection_prob = 0.5
@@ -78,13 +86,87 @@ def main():
     #
     # infection_times_df = pd.DataFrame(infection_times_list)
     # infection_times_median = dict(infection_times_df.median())
-    # clustering_coefficient_net = nx.clustering(network)
-    # degree_net = nx.degree(network)
-    # strength_net = nx.degree(network, weight="weight")
-    # betweenness_centrality_net = nx.betweenness_centrality(network)
     #
     # plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net, betweenness_centrality_net, n_nodes)
 
+    ######################################
+    #               task 5               #
+    ######################################
+
+    # nodes immunized
+    imm_neighbour = []
+    range_nodes = set(range(0, n_nodes))
+    while len(imm_neighbour) < 10:
+        rand_node = random.choice(list(range_nodes))
+        rand_neighbour = random.choice(list(network.neighbors(str(rand_node))))
+        if(int(rand_neighbour) not in imm_neighbour):
+            imm_neighbour.append(int(rand_neighbour))
+
+
+    imm_random_node = []
+    range_nodes = set(range(0, n_nodes))
+    for i in range(10):
+        rand_node = random.choice(list(range_nodes))
+        imm_random_node.append(rand_node)
+        range_nodes.remove(rand_node)
+
+
+    imm_clustering_coefficient = []
+    d = Counter(clustering_coefficient_net)
+    for k, _ in d.most_common(10):
+        imm_clustering_coefficient.append(int(k))
+
+    imm_degree = []
+    highest_degree = sorted(degree_net, key=lambda x: x[1], reverse=True)[:10]
+    for k, _ in highest_degree:
+        imm_degree.append(int(k))
+
+    imm_strength = []
+    highest_strength = sorted(strength_net, key=lambda x: x[1], reverse=True)[:10]
+    for k, _ in highest_strength:
+        imm_strength.append(int(k))
+
+    imm_betweenness_centrality = []
+    d = Counter(betweenness_centrality_net)
+    for k, _ in d.most_common(10):
+        imm_betweenness_centrality.append(int(k))
+
+
+    # create a set of all the immunized nodes
+    imm_nodes = set(imm_neighbour) | set(imm_random_node) | set(imm_clustering_coefficient) | set(imm_degree) | set(imm_strength) | set(imm_betweenness_centrality)
+    range_seed = set(range(0, n_nodes)) - imm_nodes
+
+    # extract the seed nodes from a set of nodes not part of the immunized ones
+    seed_nodes = []
+
+    for i in range(20):
+        rand_seed = random.choice(list(range_seed))
+        seed_nodes.append(rand_seed)
+        range_seed.remove(rand_seed)
+
+
+    immunized_nodes_list = []
+    immunized_nodes_list.append(imm_neighbour)
+    immunized_nodes_list.append(imm_random_node)
+    immunized_nodes_list.append(imm_clustering_coefficient)
+    immunized_nodes_list.append(imm_degree)
+    immunized_nodes_list.append(imm_strength)
+    immunized_nodes_list.append(imm_betweenness_centrality)
+    immunization_strategy_labels =['random neighbour', 'random node', 'clustering coefficient', 'degree', 'strength', 'betweenness centrality']
+    infection_prob = 0.5
+
+
+    infection_times_list_avg = []
+    infection_times_list_immunization = []
+    for immunized_nodes, imm_strategy in zip(immunized_nodes_list, immunization_strategy_labels):
+        print(imm_strategy)
+        for seed_node in seed_nodes:
+            _, infection_list = infection_time(event_data, infection_prob, seed_node, immunized_nodes)
+            infection_times_list_avg.append(infection_list)
+        infection_times_list_immunization.append(infection_times_list_avg)
+        infection_times_list_avg = []
+
+    plot_avg_prevalence_immunization(infection_times_list_immunization, immunization_strategy_labels, n_nodes, bins)
 
 
 
