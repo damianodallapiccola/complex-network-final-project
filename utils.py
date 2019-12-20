@@ -49,6 +49,52 @@ def infection_time(event_list, p, seed_node, immunized_nodes=None):
     return infection_times, infection_list
 
 
+def infection_edges(event_list, p, seed_node, edge_list, immunized_nodes=None):
+
+    edges_infecting_nodes = {}
+    infecting_edges = [0] * len(edge_list)
+
+    if immunized_nodes is None:
+        immunized_nodes = []
+    infection_times = {}
+    found_seed = False
+
+    for event in event_list:
+        if event["Source"] == seed_node and found_seed is False:
+            infection_times[str(event["Source"])] = event["StartTime"]
+            found_seed = True
+
+        if event["Destination"] not in immunized_nodes and str(event["Source"]) in infection_times and event[
+            "StartTime"] >= infection_times[str(event["Source"])] and random() <= p:
+            if str(event["Destination"]) not in infection_times:
+                infection_times[str(event["Destination"])] = event["EndTime"]
+                if event["Destination"] < event["Source"]:
+                    edge = (str(event["Destination"]), str(event["Source"]))
+                else:
+                    edge = (str(event["Source"]), str(event["Destination"]))
+                edges_infecting_nodes[str(event["Destination"])] = edge
+                edge_index = edge_list.index(edge)
+                infecting_edges[edge_index] += 1
+            else:
+                if infection_times[str(event["Destination"])] > event["EndTime"]:
+                    infection_times[str(event["Destination"])] = event["EndTime"]
+
+                    # remove the infection flag from the old edges
+                    old_edge = edges_infecting_nodes[str(event["Destination"])]
+                    edge_index = edge_list.index(old_edge)
+                    infecting_edges[edge_index] -= 1
+
+                    # adding the infection flag to the new edge
+                    if event["Destination"] < event["Source"]:
+                        edge = (str(event["Destination"]), str(event["Source"]))
+                    else:
+                        edge = (str(event["Source"]), str(event["Destination"]))
+                    edges_infecting_nodes[str(event["Destination"])] = edge
+                    edge_index = edge_list.index(edge)
+                    infecting_edges[edge_index] += 1
+
+    return infecting_edges
+
 def create_bins(start, end, n_bins):
     """
     Creates a set of linear bins.
@@ -280,3 +326,12 @@ def plot_avg_prevalence_immunization(infection_times_list_immunization, immuniza
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
     fig.savefig("./plots/t5_averaged_prevalence_immunization.pdf")
+
+
+
+
+def plot_scatterplot(x, y):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(x, y, alpha=0.5)
+    return fig, ax
