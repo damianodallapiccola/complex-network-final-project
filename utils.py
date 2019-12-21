@@ -1,31 +1,25 @@
 import numpy as np
-from random import random, seed
+from random import random
 import matplotlib.pyplot as plt
 from scipy.stats import binned_statistic, spearmanr
 import datetime as dt
-from statistics import mean
-import scipy.stats
 
 
 def infection_time(event_list, p, seed_node, immunized_nodes=None):
     """
-
     Parameters
     ----------
-    immunized_nodes
-    event_list
-    p
-    seed_node
+    event_list: list of events
+    p: probability of infection
+    seed_node: number of the seed node
+    immunized_nodes: list of immunized nodes
 
     Returns
+    infection_times: dictionary with nodes and time of the infection
+    infection_list: ordered list of infection timesteps
     -------
-    infection_times
-    infection_list
 
     """
-
-    # seed(12)
-
     if immunized_nodes is None:
         immunized_nodes = []
     infection_times = {}
@@ -37,9 +31,10 @@ def infection_time(event_list, p, seed_node, immunized_nodes=None):
             found_seed = True
 
         if event["Destination"] not in immunized_nodes and str(event["Source"]) in infection_times and event[
-            "StartTime"] >= infection_times[str(event["Source"])] and random() <= p:
+            "StartTime"] >= infection_times[str(event["Source"])]:
             if str(event["Destination"]) not in infection_times:
-                infection_times[str(event["Destination"])] = event["EndTime"]
+                if random() <= p:
+                    infection_times[str(event["Destination"])] = event["EndTime"]
             else:
                 if infection_times[str(event["Destination"])] > event["EndTime"]:
                     infection_times[str(event["Destination"])] = event["EndTime"]
@@ -50,7 +45,21 @@ def infection_time(event_list, p, seed_node, immunized_nodes=None):
 
 
 def infection_edges(event_list, p, seed_node, edge_list, immunized_nodes=None):
+    """
 
+    Parameters
+    ----------
+    event_list: list of events
+    p: probability of infection
+    seed_node: number of the seed node
+    edge_list: list of edges (used to keep the right order of the return)
+    immunized_nodes: list of immunized nodes
+
+    Returns
+    infecting_edges: list containing the number of times that each link is used to transmit the disease (0 or 1)
+    -------
+
+    """
     edges_infecting_nodes = {}
     infecting_edges = [0] * len(edge_list)
 
@@ -65,16 +74,17 @@ def infection_edges(event_list, p, seed_node, edge_list, immunized_nodes=None):
             found_seed = True
 
         if event["Destination"] not in immunized_nodes and str(event["Source"]) in infection_times and event[
-            "StartTime"] >= infection_times[str(event["Source"])] and random() <= p:
+            "StartTime"] >= infection_times[str(event["Source"])]:
             if str(event["Destination"]) not in infection_times:
-                infection_times[str(event["Destination"])] = event["EndTime"]
-                if event["Destination"] < event["Source"]:
-                    edge = (str(event["Destination"]), str(event["Source"]))
-                else:
-                    edge = (str(event["Source"]), str(event["Destination"]))
-                edges_infecting_nodes[str(event["Destination"])] = edge
-                edge_index = edge_list.index(edge)
-                infecting_edges[edge_index] += 1
+                if random() <= p:
+                    infection_times[str(event["Destination"])] = event["EndTime"]
+                    if event["Destination"] < event["Source"]:
+                        edge = (str(event["Destination"]), str(event["Source"]))
+                    else:
+                        edge = (str(event["Source"]), str(event["Destination"]))
+                    edges_infecting_nodes[str(event["Destination"])] = edge
+                    edge_index = edge_list.index(edge)
+                    infecting_edges[edge_index] = 1
             else:
                 if infection_times[str(event["Destination"])] > event["EndTime"]:
                     infection_times[str(event["Destination"])] = event["EndTime"]
@@ -82,7 +92,7 @@ def infection_edges(event_list, p, seed_node, edge_list, immunized_nodes=None):
                     # remove the infection flag from the old edges
                     old_edge = edges_infecting_nodes[str(event["Destination"])]
                     edge_index = edge_list.index(old_edge)
-                    infecting_edges[edge_index] -= 1
+                    infecting_edges[edge_index] = 0
 
                     # adding the infection flag to the new edge
                     if event["Destination"] < event["Source"]:
@@ -91,7 +101,7 @@ def infection_edges(event_list, p, seed_node, edge_list, immunized_nodes=None):
                         edge = (str(event["Source"]), str(event["Destination"]))
                     edges_infecting_nodes[str(event["Destination"])] = edge
                     edge_index = edge_list.index(edge)
-                    infecting_edges[edge_index] += 1
+                    infecting_edges[edge_index] = 1
 
     return infecting_edges
 
@@ -115,17 +125,14 @@ def create_bins(start, end, n_bins):
 
 def plot_avg_prevalence_probs(infection_times_list, infection_prob, n_nodes, bins):
     """
+    save plots task 2
 
     Parameters
     ----------
-    infection_times_list
-    infection_prob
-    n_nodes
-    bins
-
-    Returns
-    -------
-
+    infection_times_list: list of infection times
+    infection_prob: infection probabilities
+    n_nodes: number of nodes in the network
+    bins: bins for the plot
     """
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -150,8 +157,6 @@ def plot_avg_prevalence_probs(infection_times_list, infection_prob, n_nodes, bin
 
         ax.plot(date, avg_prevalence, label=prob)
         prevalences = []
-        # ax.get_xaxis().get_major_formatter().set_useOffset(False)
-        # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
     plt.suptitle(r'Averaged prevalence of the disease with different infection probabilities')
@@ -159,23 +164,22 @@ def plot_avg_prevalence_probs(infection_times_list, infection_prob, n_nodes, bin
     ax.set_ylabel(r'averaged prevalence $\rho(t)$')
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
-    fig.savefig("./plots/averaged_prevalence_probs.pdf")
+    fig.savefig("./plots/t2_averaged_prevalence_probs.pdf")
 
 
 def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_nodes, bins):
     """
+    save plots task 3
 
     Parameters
     ----------
-    infection_times_list_nodes
-    seed_nodes_labels
-    n_nodes
-    bins
-
-    Returns
-    -------
+    infection_times_list_nodes: list of infection times nodes
+    seed_nodes_labels: labels for the legend
+    n_nodes: number of nodes in the network
+    bins: bins for the plot
 
     """
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -200,8 +204,6 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
 
         ax.plot(date, avg_prevalence, label=label)
         prevalences = []
-        # ax.get_xaxis().get_major_formatter().set_useOffset(False)
-        # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
     plt.suptitle(r'Average prevalence of the disease with different seed nodes')
@@ -209,11 +211,25 @@ def plot_avg_prevalence_nodes(infection_times_list_nodes, seed_nodes_labels, n_n
     ax.set_ylabel(r'averaged prevalence $\rho(t)$')
 
     fig.autofmt_xdate(bottom=0.2, rotation=20, ha='right')
-    fig.savefig("./plots/averaged_prevalence_nodes.pdf")
+    fig.savefig("./plots/t3_averaged_prevalence_nodes.pdf")
 
 
 def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, degree_net, strength_net,
                             betweenness_centrality_net, n_nodes):
+    """
+    Save the plots and print the Spearman rank-correlation coefficients requested in the task 4
+
+    Parameters
+    ----------
+    infection_times_median: ordered list of infection times median values
+    clustering_coefficient_net: ordered list of clustering coefficient values
+    degree_net: ordered list of degree values
+    strength_net: ordered list of strength values
+    betweenness_centrality_net: ordered list of betweenness centrality values
+    n_nodes: number of nodes in the network
+    -------
+
+    """
     # ordered list of values, the index represent the node
     infection_times_median_list = []
     clustering_coefficient_net_list = []
@@ -228,13 +244,10 @@ def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, 
         strength_net_list.append(strength_net[str(i)])
         betweenness_centrality_net_list.append(betweenness_centrality_net[str(i)])
 
-    # dateconv = np.vectorize(dt.datetime.fromtimestamp)
-    # date = dateconv(infection_times_median_list)
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.scatter(clustering_coefficient_net_list, infection_times_median_list, alpha=0.5)
-    # plt.ylim(dateconv(dateconv([min(infection_times_median_list)-(min(infection_times_median_list)%(3600*24))])), max(date))
     plt.suptitle(r'Median infection times as a function of the unweighted clustering coefficient')
     ax.set_xlabel(r'clustering coefficient $c$')
     ax.set_ylabel(r'median infection time')
@@ -280,17 +293,14 @@ def plot_and_spearman_task4(infection_times_median, clustering_coefficient_net, 
 
 def plot_avg_prevalence_immunization(infection_times_list_immunization, immunization_strategy_labels, n_nodes, bins):
     """
+    Save plots task 5
 
     Parameters
     ----------
-    infection_times_list_immunization
-    immunization_strategy_labels
-    n_nodes
-    bins
-
-    Returns
-    -------
-
+    infection_times_list_immunization: list of infection times
+    immunization_strategy_labels: label to print in the legend
+    n_nodes: number of nodes of the network
+    bins: bins used for the plot
     """
 
     fig = plt.figure()
@@ -316,8 +326,6 @@ def plot_avg_prevalence_immunization(infection_times_list_immunization, immuniza
 
         ax.plot(date, avg_prevalence, label=label)
         prevalences = []
-        # ax.get_xaxis().get_major_formatter().set_useOffset(False)
-        # ax.get_xaxis().get_major_formatter().set_scientific(False)
 
     ax.legend()
     plt.suptitle(r'Average prevalence of the disease with different immunization strategies')
@@ -331,6 +339,19 @@ def plot_avg_prevalence_immunization(infection_times_list_immunization, immuniza
 
 
 def plot_scatterplot(x, y):
+    """
+    Plots a scatterplot
+
+    Parameters
+    ----------
+    x: list of data axis x
+    y: list of data axis y
+
+    Returns
+    -------
+    fig, ax: to allow adding lables and choose where to save the plot
+    """
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.scatter(x, y, alpha=0.5)
